@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STEEL WRATH</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+  :root {
+    --red: #e8001c;
+    --yellow: #f5c400;
+    --blue: #0057e3;
+    --cyan: #00d4ff;
+    --bg: #0a0005;
+    --steel: #3a1f00;
+    --platform: #c87030;
+    --ladder: #ffcc00;
+    --player: #e83030;
+    --kong: #8B4513;
+    --barrel: #8B4513;
+    --princess: #ff69b4;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Press Start 2P', monospace;
+    overflow: hidden;
+  }
+
+  #header {
+    color: var(--red);
+    font-size: 28px;
+    letter-spacing: 6px;
+    margin-bottom: 6px;
+    text-shadow: 4px 4px 0 #7a0010, 0 0 20px #ff003355;
+    animation: titlePulse 2s ease-in-out infinite;
+  }
+
+  @keyframes titlePulse {
+    0%,100% { text-shadow: 4px 4px 0 #7a0010, 0 0 20px #ff003355; }
+    50% { text-shadow: 4px 4px 0 #7a0010, 0 0 40px #ff003399; }
+  }
+
+  #score-bar {
+    display: flex;
+    gap: 40px;
+    color: var(--yellow);
+    font-size: 9px;
+    margin-bottom: 8px;
+  }
+
+  #score-bar span { color: white; }
+
+  #game-container {
+    position: relative;
+    border: 3px solid var(--red);
+    box-shadow: 0 0 30px #e8001c44, inset 0 0 30px #00000088;
+    background: #110008;
+  }
+
+  canvas {
+    display: block;
+    image-rendering: pixelated;
+  }
+
+  #overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #000000cc;
+    z-index: 10;
+  }
+
+  #overlay h2 {
+    color: var(--yellow);
+    font-size: 22px;
+    margin-bottom: 20px;
+    text-shadow: 3px 3px 0 #7a6000;
+    animation: blink 1s step-end infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  #overlay p {
+    color: white;
+    font-size: 8px;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  #start-btn {
+    margin-top: 16px;
+    background: var(--red);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 #7a0010;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+
+  #start-btn:hover {
+    transform: translate(-2px,-2px);
+    box-shadow: 6px 6px 0 #7a0010;
+  }
+
+  #start-btn:active {
+    transform: translate(2px,2px);
+    box-shadow: 2px 2px 0 #7a0010;
+  }
+
+  #controls {
+    color: #888;
+    font-size: 7px;
+    margin-top: 16px;
+    text-align: center;
+    line-height: 2;
+  }
+
+  .lives-display {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  /* ── RESPONSIVE SCALING ── */
+  #game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 560px;
+  }
+
+  #header {
+    font-size: clamp(14px, 4vw, 28px);
+  }
+
+  #score-bar {
+    gap: clamp(8px, 3vw, 40px);
+    font-size: clamp(6px, 1.8vw, 9px);
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  #game-container {
+    width: 100%;
+    touch-action: none;
+  }
+
+  #game-container canvas {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* ── TOUCH D-PAD ── */
+  #touch-controls {
+    display: none;
+    width: 100%;
+    max-width: 520px;
+    padding: 10px 4px 4px;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #touch-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  #dpad {
+    display: grid;
+    grid-template-columns: 52px 52px 52px;
+    grid-template-rows: 52px 52px;
+    gap: 4px;
+  }
+
+  .dpad-btn {
+    background: #ffffff18;
+    border: 2px solid #ffffff33;
+    border-radius: 8px;
+    color: #ffffffbb;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    transition: background 0.08s;
+  }
+
+  .dpad-btn:active, .dpad-btn.pressed {
+    background: #ffffff44;
+    border-color: #ffffff88;
+  }
+
+  #btn-left  { grid-column: 1; grid-row: 2; }
+  #btn-up    { grid-column: 2; grid-row: 1; }
+  #btn-right { grid-column: 3; grid-row: 2; }
+  #btn-down  { grid-column: 2; grid-row: 2; background: transparent; border-color: transparent; }
+
+  #action-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .action-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 3px solid;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: transform 0.08s;
+    line-height: 1.4;
+  }
+
+  .action-btn:active, .action-btn.pressed {
+    transform: scale(0.92);
+  }
+
+  #btn-jump {
+    background: #e8001c33;
+    border-color: #e8001c;
+    color: #ff6677;
+  }
+
+  #btn-blast {
+    background: #00eeff22;
+    border-color: #00eeff;
+    color: #00eeff;
+  }
+
+  @media (max-width: 600px) {
+    #touch-controls { display: block; }
+    #controls { display: none; }
+    body { justify-content: flex-start; padding-top: 8px; overflow-y: auto; }
+  }
+
+  @media (max-height: 700px) and (max-width: 600px) {
+    .action-btn { width: 54px; height: 54px; }
+    .dpad-btn   { font-size: 17px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="game-wrapper">
+<div id="header">★ STEEL WRATH ★</div>
+<div id="score-bar">
+  <div>SCORE: <span id="scoreVal">0</span></div>
+  <div>HIGH: <span id="highVal">0</span></div>
+  <div>LIVES: <span id="livesVal">❤❤❤</span></div>
+  <div>LEVEL: <span id="levelVal">1</span></div>
+</div>
+
+<div id="game-container">
+  <canvas id="canvas" width="520" height="480"></canvas>
+  <div id="overlay">
+    <h2>STEEL WRATH</h2>
+    <p>SURVIVE THE STEEL TITAN!</p>
+    <p style="color:#aaa; margin-top:8px;">← → MOVE &nbsp;|&nbsp; ↑/W/SPACE JUMP &nbsp;|&nbsp; Z GAMMA BLAST</p>
+    <button id="start-btn" onclick="startGame()">INSERT COIN</button>
+    <div id="controls">ARROW KEYS or WASD to move &amp; jump</div>
+  </div>
+</div>
+
+<div id="touch-controls">
+  <div id="touch-row">
+    <div id="dpad">
+      <div class="dpad-btn" id="btn-up">▲</div>
+      <div class="dpad-btn" id="btn-left">◀</div>
+      <div class="dpad-btn" id="btn-down"></div>
+      <div class="dpad-btn" id="btn-right">▶</div>
+    </div>
+    <div id="action-btns">
+      <div class="action-btn" id="btn-blast">⚡<br>BLAST</div>
+      <div class="action-btn" id="btn-jump">JUMP</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+let state = 'menu'; // menu, playing, dead, win, gameover
+let score = 0, highScore = 0, lives = 3, level = 1;
+let frameCount = 0;
+let animFrame;
+
+// Platform layout (x, y, width, height, hasLadderLeft, hasLadderRight)
+function getPlatforms() {
+  const w = W;
+  return [
+    // Ground
+    { x: 0, y: H - 30, w: W, h: 30, color: '#c87030' },
+    // Level 4 (top)
+    { x: 20, y: 100, w: 320, h: 14, color: '#c87030', tilt: -3 },
+    // Level 3
+    { x: 60, y: 190, w: 380, h: 14, color: '#c87030', tilt: 2 },
+    // Level 2
+    { x: 20, y: 280, w: 360, h: 14, color: '#c87030', tilt: -2 },
+    // Level 1 (just above ground)
+    { x: 60, y: 370, w: 400, h: 14, color: '#c87030', tilt: 0 },
+  ];
+}
+
+function getLadders() {
+  return [
+    { x: 280, y: 106, h: 84 },   // top-left to level 3
+    { x: 120, y: 196, h: 84 },   // level 3 to level 2
+    { x: 350, y: 196, h: 84 },   // level 3 to level 2 right
+    { x: 200, y: 286, h: 84 },   // level 2 to level 1
+    { x: 400, y: 286, h: 60 },   // level 2 short right
+    { x: 100, y: 376, h: 54 },   // level 1 to ground
+    { x: 380, y: 376, h: 54 },   // level 1 to ground right
+  ];
+}
+
+let platforms = getPlatforms();
+let ladders = getLadders();
+
+// Player
+let player = {};
+let kong = {};
+let princess = {};
+let barrels = [];
+let particles = [];
+let stars = [];
+let gammaBlasts = [];
+let kongExplosion = null;
+let zPressed = false;
+
+function initStars() {
+  stars = [];
+  for (let i = 0; i < 40; i++) {
+    stars.push({ x: Math.random()*W, y: Math.random()*(H*0.6), r: Math.random()*1.5+0.3, t: Math.random()*Math.PI*2 });
+  }
+}
+
+function resetPlayer() {
+  player = {
+    x: 60, y: H - 60,
+    vx: 0, vy: 0,
+    w: 20, h: 28,
+    onGround: false,
+    onLadder: false,
+    climbDir: 0,
+    dir: 1,
+    frame: 0,
+    frameTimer: 0,
+    dead: false,
+    deadTimer: 0,
+    invincible: 0,
+  };
+}
+
+function resetKong() {
+  kong = {
+    x: 30, y: 58,
+    w: 64, h: 42,
+    frame: 0,
+    frameTimer: 0,
+    throwTimer: 60 + Math.random()*60,
+    angry: false,
+    angryTimer: 0,
+  };
+}
+
+function resetPrincess() {
+  princess = {
+    x: 360, y: 62,
+    w: 18, h: 28,
+    frame: 0,
+    frameTimer: 0,
+  };
+}
+
+function initLevel() {
+  platforms = getPlatforms();
+  ladders = getLadders();
+  barrels = [];
+  particles = [];
+  gammaBlasts = [];
+  kongExplosion = null;
+  zPressed = false;
+  resetPlayer();
+  resetKong();
+  resetPrincess();
+  initStars();
+}
+
+// Input
+const keys = {};
+document.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
+});
+document.addEventListener('keyup', e => { keys[e.key] = false; });
+
+// ── TOUCH CONTROLS ──────────────────────────────────────────────
+function bindTouch(id, keyName) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const press = e => {
+    e.preventDefault();
+    keys[keyName] = true;
+    el.classList.add('pressed');
+  };
+  const release = e => {
+    e.preventDefault();
+    keys[keyName] = false;
+    el.classList.remove('pressed');
+  };
+  el.addEventListener('touchstart',  press,   { passive: false });
+  el.addEventListener('touchend',    release, { passive: false });
+  el.addEventListener('touchcancel', release, { passive: false });
+  el.addEventListener('mousedown',   press);
+  el.addEventListener('mouseup',     release);
+  el.addEventListener('mouseleave',  release);
+}
+
+bindTouch('btn-left',  'ArrowLeft');
+bindTouch('btn-right', 'ArrowRight');
+bindTouch('btn-up',    'ArrowUp');
+bindTouch('btn-jump',  ' ');
+bindTouch('btn-blast', 'z');
+
+// Prevent page scroll while playing
+document.getElementById('game-container').addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+
+function startGame() {
+  const ov = document.getElementById('overlay');
+  ov.style.display = 'none';
+  ov.style.background = '#000000cc';
+  score = 0; lives = 3; level = 1;
+  state = 'playing';
+  kongExplosion = null;
+  gammaBlasts = [];
+  zPressed = false;
+  initLevel();
+  updateHUD();
+  if (animFrame) cancelAnimationFrame(animFrame);
+  loop();
+}
+
+function updateHUD() {
+  document.getElementById('scoreVal').textContent = score;
+  document.getElementById('highVal').textContent = highScore;
+  document.getElementById('livesVal').textContent = '❤'.repeat(lives);
+  document.getElementById('levelVal').textContent = level;
+}
+
+// Collision helpers
+function rectOverlap(a, b) {
+  return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+}
+
+function onPlatform(entity) {
+  for (let p of platforms) {
+    let tilt = p.tilt || 0;
+    let surfaceY = p.y + tilt * ((entity.x + entity.w/2 - p.x) / p.w);
+    if (entity.x + entity.w > p.x && entity.x < p.x + p.w &&
+        entity.y + entity.h >= surfaceY && entity.y + entity.h <= surfaceY + 20 &&
+        entity.vy >= 0) {
+      return { hit: true, y: surfaceY };
+    }
+  }
+  return { hit: false };
+}
+
+function onLadder(entity) {
+  let cx = entity.x + entity.w/2;
+  let cy = entity.y + entity.h/2;
+  for (let l of ladders) {
+    if (cx > l.x && cx < l.x+16 && cy > l.y && cy < l.y+l.h+16) return l;
+  }
+  return null;
+}
+
+// Spawn barrel
+function spawnBarrel() {
+  let speed = 1.8 + level * 0.3 + Math.random() * 0.8;
+  barrels.push({
+    x: kong.x + 30, y: 90,
+    vx: speed, vy: 0,
+    w: 18, h: 16,
+    onGround: false,
+    frame: 0,
+    frameTimer: 0,
+    rolling: true,
+    bounceCount: 0,
+  });
+}
+
+function addParticle(x, y, color) {
+  for (let i = 0; i < 8; i++) {
+    let a = (i/8)*Math.PI*2;
+    let spd = 2+Math.random()*3;
+    particles.push({
+      x, y,
+      vx: Math.cos(a)*spd, vy: Math.sin(a)*spd - 2,
+      life: 1, color, size: 4+Math.random()*4,
+    });
+  }
+}
+
+// Update
+function update() {
+  frameCount++;
+
+  if (state !== 'playing' && state !== 'kongdead') return;
+
+  // Stars twinkle
+  for (let s of stars) s.t += 0.05;
+
+  // Player input & physics
+  if (!player.dead) {
+    // Horizontal
+    let speed = 2.4 + level * 0.1;
+    if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
+      player.vx = -speed;
+      player.dir = -1;
+    } else if (keys['ArrowRight'] || keys['d'] || keys['D']) {
+      player.vx = speed;
+      player.dir = 1;
+    } else {
+      player.vx *= 0.7;
+    }
+
+    // Ladder
+    let lad = onLadder(player);
+    if (lad && (keys['ArrowUp'] || keys['w'] || keys['W'])) {
+      player.onLadder = true;
+      player.vy = -2.2;
+    } else if (lad && (keys['ArrowDown'] || keys['s'] || keys['S'])) {
+      player.onLadder = true;
+      player.vy = 2.2;
+    } else if (!lad) {
+      player.onLadder = false;
+    }
+
+    // Jump
+    if ((keys['ArrowUp'] || keys['w'] || keys['W'] || keys[' ']) && player.onGround && !player.onLadder) {
+      player.vy = -9;
+      player.onGround = false;
+    }
+
+    // Gamma Blast on Z
+    if ((keys['z'] || keys['Z']) && !zPressed && !kongExplosion) {
+      zPressed = true;
+      gammaBlasts.push({
+        x: player.x + (player.dir > 0 ? player.w : -8),
+        y: player.y + 10,
+        vx: player.dir * 9,
+        vy: 0,
+        w: 14, h: 8,
+        frame: 0, frameTimer: 0,
+        trail: [],
+      });
+    }
+    if (!keys['z'] && !keys['Z']) zPressed = false;
+
+    if (!player.onLadder) {
+      player.vy += 0.45; // gravity
+    } else {
+      player.vy *= 0.6;
+      player.vx *= 0.3;
+    }
+
+    player.x += player.vx;
+    player.y += player.vy;
+
+    // Platform collision
+    let plat = onPlatform(player);
+    if (plat.hit) {
+      player.y = plat.y - player.h;
+      player.vy = 0;
+      player.onGround = true;
+    } else {
+      player.onGround = false;
+    }
+
+    // Bounds
+    if (player.x < 0) player.x = 0;
+    if (player.x + player.w > W) player.x = W - player.w;
+    if (player.y > H) { killPlayer(); return; }
+
+    // Win condition
+    if (player.x + player.w > princess.x && player.x < princess.x + princess.w &&
+        player.y + player.h > princess.y && player.y < princess.y + princess.h) {
+      winLevel();
+      return;
+    }
+
+    // Barrel collision
+    if (player.invincible <= 0) {
+      for (let b of barrels) {
+        if (rectOverlap(player, b)) {
+          killPlayer();
+          return;
+        }
+      }
+    } else {
+      player.invincible--;
+    }
+
+    // Animate player
+    player.frameTimer++;
+    if (player.frameTimer > 8) { player.frame = (player.frame+1)%4; player.frameTimer = 0; }
+
+  } else {
+    // Dead animation
+    player.deadTimer--;
+    if (player.deadTimer <= 0) {
+      lives--;
+      updateHUD();
+      if (lives <= 0) {
+        state = 'gameover';
+        showOverlay('GAME OVER', 'Press INSERT COIN to retry', true);
+      } else {
+        resetPlayer();
+        barrels = [];
+      }
+    }
+  }
+
+  // Kong
+  kong.frameTimer++;
+  if (kong.frameTimer > 12) { kong.frame = (kong.frame+1)%2; kong.frameTimer = 0; }
+  kong.throwTimer--;
+  if (kong.throwTimer <= 0 && !kongExplosion) {
+    spawnBarrel();
+    kong.throwTimer = 50 + Math.random()*60 - level*5;
+    kong.angry = true;
+    kong.angryTimer = 30;
+    score += 10;
+    updateHUD();
+  }
+  if (kong.angryTimer > 0) kong.angryTimer--;
+  else kong.angry = false;
+
+  // Princess
+  princess.frameTimer++;
+  if (princess.frameTimer > 20) { princess.frame = (princess.frame+1)%2; princess.frameTimer = 0; }
+
+  // Barrels
+  for (let i = barrels.length-1; i >= 0; i--) {
+    let b = barrels[i];
+    b.vy += 0.4;
+    b.x += b.vx;
+    b.y += b.vy;
+
+    let plat = onPlatform(b);
+    if (plat.hit) {
+      b.y = plat.y - b.h;
+      b.vy = 0;
+      // Bounce off edge
+      if (b.x < 20 || b.x + b.w > W - 20) {
+        b.vx *= -1;
+        b.bounceCount++;
+      }
+    }
+
+    b.frameTimer++;
+    if (b.frameTimer > 3) { b.frame = (b.frame+1)%8; b.frameTimer = 0; }
+
+    if (b.y > H || b.bounceCount > 6 || b.x < -50 || b.x > W+50) {
+      addParticle(b.x, b.y, '#c87030');
+      barrels.splice(i,1);
+      score += 5;
+      updateHUD();
+    }
+  }
+
+  // Particles
+  for (let i = particles.length-1; i >= 0; i--) {
+    let p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life -= 0.04;
+    if (p.life <= 0) particles.splice(i,1);
+  }
+
+  // Gamma blasts
+  for (let i = gammaBlasts.length-1; i >= 0; i--) {
+    let g = gammaBlasts[i];
+    // Save trail
+    g.trail.push({ x: g.x, y: g.y });
+    if (g.trail.length > 10) g.trail.shift();
+
+    g.x += g.vx;
+    g.y += g.vy;
+    g.frameTimer++;
+    if (g.frameTimer > 2) { g.frame = (g.frame+1)%4; g.frameTimer = 0; }
+
+    // Hit kong
+    if (!kongExplosion &&
+        g.x < kong.x+kong.w && g.x+g.w > kong.x &&
+        g.y < kong.y+kong.h && g.y+g.h > kong.y) {
+      gammaBlasts.splice(i, 1);
+      kongExplosion = { timer: 120, x: kong.x+32, y: kong.y+32, phase: 0 };
+      barrels = []; // clear all in-flight shurikens
+      score += 2000;
+      updateHUD();
+      // Big explosion particles
+      for (let e = 0; e < 30; e++) {
+        let a = (e/30)*Math.PI*2;
+        let spd = 2 + Math.random()*6;
+        particles.push({
+          x: kong.x+32, y: kong.y+32,
+          vx: Math.cos(a)*spd, vy: Math.sin(a)*spd - 3,
+          life: 1, color: ['#ff4400','#ffaa00','#00eeff','#ffffff','#ff0000'][e%5],
+          size: 6+Math.random()*8,
+        });
+      }
+      continue;
+    }
+
+    // Out of bounds
+    if (g.x > W+20 || g.x < -20) {
+      gammaBlasts.splice(i, 1);
+    }
+  }
+
+  // Kong explosion sequence
+  if (kongExplosion) {
+    kongExplosion.timer--;
+    kongExplosion.phase = Math.floor((120 - kongExplosion.timer) / 20);
+    // Continuous sparks
+    if (frameCount % 3 === 0) {
+      let cx = kong.x + 10 + Math.random()*44;
+      let cy = kong.y + Math.random()*60;
+      addParticle(cx, cy, ['#ff4400','#ffcc00','#00eeff','#ffffff'][Math.floor(Math.random()*4)]);
+    }
+    if (kongExplosion.timer <= 0) {
+      // Victory!
+      state = 'kongdead';
+      showVictory();
+    }
+  }
+
+  if (score > highScore) { highScore = score; updateHUD(); }
+}
+
+function killPlayer() {
+  if (player.dead) return;
+  player.dead = true;
+  player.deadTimer = 80;
+  player.vx = 0; player.vy = -5;
+  addParticle(player.x + player.w/2, player.y + player.h/2, '#e83030');
+}
+
+function winLevel() {
+  addParticle(princess.x+9, princess.y+14, '#ff69b4');
+  score += 500 + level * 200;
+  level++;
+  updateHUD();
+  if (level > 3) {
+    state = 'win';
+    showOverlay('YOU WIN! 🎉', `FINAL SCORE: ${score}`, true);
+  } else {
+    initLevel();
+    state = 'playing';
+  }
+}
+
+function showVictory() {
+  const ov = document.getElementById('overlay');
+  ov.style.display = 'flex';
+  ov.style.background = 'transparent';
+  ov.innerHTML = `
+    <div style="background:#000000dd; padding:30px 40px; border:3px solid #00eeff; box-shadow:0 0 40px #00eeff88, inset 0 0 20px #00000088; text-align:center;">
+      <div style="color:#00eeff; font-size:20px; letter-spacing:4px; margin-bottom:16px; text-shadow:0 0 20px #00eeff, 0 0 40px #00eeffaa; animation:blink 0.8s step-end infinite;">★ VICTORY ★</div>
+      <div style="color:#ffcc00; font-size:11px; margin-bottom:10px; text-shadow:2px 2px 0 #7a6000;">STEEL TITAN ANNIHILATED!</div>
+      <div style="color:#ffffff; font-size:8px; margin-bottom:6px;">GAMMA BLAST: CRITICAL HIT</div>
+      <div style="color:#00eeff; font-size:10px; margin: 14px 0; letter-spacing:2px;">SCORE: ${score}</div>
+      <div style="color:#ff69b4; font-size:8px; margin-bottom:16px;">PRINCESS RESCUED!</div>
+      <button onclick="location.reload()" style="margin-top:8px;background:#00eeff22;color:#00eeff;border:2px solid #00eeff;padding:10px 20px;font-family:'Press Start 2P',monospace;font-size:9px;cursor:pointer;letter-spacing:2px;text-shadow:0 0 10px #00eeff;box-shadow:0 0 20px #00eeff44;">PLAY AGAIN</button>
+    </div>
+  `;
+}
+
+
+function showOverlay(title, msg, showBtn) {
+  const ov = document.getElementById('overlay');
+  ov.style.display = 'flex';
+  ov.style.background = '#000000cc';
+  ov.innerHTML = `
+    <h2>${title}</h2>
+    <p style="margin-top:12px;">${msg}</p>
+    ${showBtn ? `<button id="start-btn" onclick="startGame()" style="margin-top:20px;background:#e8001c;color:white;border:none;padding:12px 24px;font-family:'Press Start 2P',monospace;font-size:11px;cursor:pointer;box-shadow:4px 4px 0 #7a0010;">INSERT COIN</button>` : ''}
+  `;
+}
+
+// Draw
+function draw() {
+  ctx.fillStyle = '#110008';
+  ctx.fillRect(0,0,W,H);
+
+  // Stars
+  for (let s of stars) {
+    let a = 0.5 + 0.5*Math.sin(s.t);
+    ctx.globalAlpha = a * 0.7;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(s.x, s.y*0.95, s.r, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Platforms
+  for (let p of platforms) {
+    let tilt = p.tilt || 0;
+    ctx.save();
+    // Draw with tilt
+    let leftY = p.y;
+    let rightY = p.y + tilt;
+    ctx.beginPath();
+    ctx.moveTo(p.x, leftY);
+    ctx.lineTo(p.x+p.w, rightY);
+    ctx.lineTo(p.x+p.w, rightY+p.h);
+    ctx.lineTo(p.x, leftY+p.h);
+    ctx.closePath();
+    let grad = ctx.createLinearGradient(p.x, leftY, p.x, leftY+p.h+10);
+    grad.addColorStop(0, '#e8943a');
+    grad.addColorStop(0.4, '#c87030');
+    grad.addColorStop(1, '#7a4010');
+    ctx.fillStyle = grad;
+    ctx.fill();
+    // Edge highlight
+    ctx.strokeStyle = '#f0a040';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(p.x, leftY);
+    ctx.lineTo(p.x+p.w, rightY);
+    ctx.stroke();
+    // Rivets
+    ctx.fillStyle = '#ffcc55';
+    for (let rx = p.x+20; rx < p.x+p.w-10; rx += 40) {
+      let ry = leftY + (tilt * (rx - p.x) / p.w) + 4;
+      ctx.beginPath(); ctx.arc(rx, ry, 3, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Ladders
+  for (let l of ladders) {
+    ctx.fillStyle = '#ffcc00';
+    // Side rails
+    ctx.fillRect(l.x, l.y, 3, l.h);
+    ctx.fillRect(l.x+13, l.y, 3, l.h);
+    // Rungs
+    ctx.fillStyle = '#ffaa00';
+    for (let ry = l.y+8; ry < l.y+l.h; ry += 14) {
+      ctx.fillRect(l.x+3, ry, 10, 4);
+    }
+  }
+
+  // Kong
+  if (!kongExplosion || kongExplosion.timer > 30) {
+    drawKong(kong.x, kong.y, kong.frame, kong.angry || !!kongExplosion);
+  }
+
+  // Princess
+  drawPrincess(princess.x, princess.y, princess.frame);
+
+  // Player
+  if (!player.dead || Math.floor(frameCount/4)%2 === 0) {
+    drawPlayer(player.x, player.y, player.dir, player.frame, player.onLadder);
+  }
+
+  // Barrels
+  for (let b of barrels) {
+    drawBarrel(b.x, b.y, b.frame);
+  }
+
+  // Particles
+  for (let p of particles) {
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+  }
+  ctx.globalAlpha = 1;
+
+  // Gamma blasts
+  for (let g of gammaBlasts) {
+    // Trail
+    for (let t = 0; t < g.trail.length; t++) {
+      let alpha = (t / g.trail.length) * 0.5;
+      ctx.globalAlpha = alpha;
+      let size = 4 + t * 0.6;
+      ctx.fillStyle = '#00eeff';
+      ctx.fillRect(g.trail[t].x - size/2, g.trail[t].y - 3, size, 6);
+    }
+    ctx.globalAlpha = 1;
+
+    // Core blast orb
+    ctx.save();
+    ctx.translate(g.x + g.w/2, g.y + g.h/2);
+    // Outer glow
+    let glowGrad = ctx.createRadialGradient(0, 0, 1, 0, 0, 12);
+    glowGrad.addColorStop(0, '#ffffff');
+    glowGrad.addColorStop(0.3, '#00eeff');
+    glowGrad.addColorStop(0.7, '#0044ff88');
+    glowGrad.addColorStop(1, '#00000000');
+    ctx.fillStyle = glowGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, 12, 0, Math.PI*2);
+    ctx.fill();
+    // Pulsing inner core
+    let pulse = 4 + Math.sin(frameCount * 0.4) * 2;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(0, 0, pulse, 0, Math.PI*2);
+    ctx.fill();
+    // Energy rings
+    ctx.strokeStyle = '#00eeff88';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, 8 + g.frame, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Kong explosion overlay
+  if (kongExplosion) {
+    let t = kongExplosion;
+    let alpha = Math.min(1, (120 - t.timer) / 20);
+    // White flash on impact
+    if (t.timer > 100) {
+      ctx.fillStyle = `rgba(255,255,255,${(t.timer-100)/20 * 0.8})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+    // Screen shake simulation: draw red/cyan flicker over kong area
+    if (t.phase < 4) {
+      ctx.globalAlpha = 0.3 + Math.sin(frameCount * 0.8) * 0.2;
+      ctx.fillStyle = ['#ff4400','#ffcc00','#00eeff','#ff0044'][t.phase % 4];
+      ctx.fillRect(kong.x - 10, kong.y - 10, kong.w + 20, kong.h + 20);
+      ctx.globalAlpha = 1;
+    }
+    // "CRITICAL HIT" text
+    if (t.timer < 90 && t.timer > 50) {
+      ctx.font = '12px "Press Start 2P"';
+      ctx.fillStyle = '#ffcc00';
+      ctx.textAlign = 'center';
+      ctx.shadowColor = '#ff4400';
+      ctx.shadowBlur = 10;
+      ctx.fillText('CRITICAL HIT!', W/2, H/2 - 20);
+      ctx.shadowBlur = 0;
+      ctx.textAlign = 'left';
+    }
+  }
+
+  // HUD score flash
+  if (frameCount % 60 < 5) {
+    ctx.fillStyle = '#f5c40088';
+    ctx.font = '8px "Press Start 2P"';
+    ctx.fillText(`+${score}`, W/2-20, 20);
+  }
+}
+
+function drawKong(x, y, frame, angry) {
+  ctx.save();
+  const metal1 = '#aab8c2';
+  const metal2 = '#6e8090';
+  const metal3 = '#3a4a55';
+  const metal4 = '#1e2a32';
+  const dark = '#0d1318';
+  const eyeColor = angry ? '#ff2200' : '#ff4400';
+  const eyeGlow = angry ? '#ff000088' : '#ff440044';
+  const armOff = frame * 4;
+
+  // --- LEGS ---
+  // Left leg - segmented
+  ctx.fillStyle = metal3;
+  ctx.fillRect(x+14, y+44, 13, 8);
+  ctx.fillStyle = metal2;
+  ctx.fillRect(x+15, y+52, 11, 8);
+  ctx.fillStyle = metal3;
+  ctx.fillRect(x+14, y+58, 13, 4);
+  // Left foot
+  ctx.fillStyle = metal4;
+  ctx.fillRect(x+10, y+60, 18, 6);
+  ctx.fillStyle = metal3;
+  ctx.fillRect(x+9, y+64, 20, 3);
+
+  // Right leg
+  ctx.fillStyle = metal3;
+  ctx.fillRect(x+37, y+44, 13, 8);
+  ctx.fillStyle = metal2;
+  ctx.fillRect(x+38, y+52, 11, 8);
+  ctx.fillStyle = metal3;
+  ctx.fillRect(x+37, y+58, 13, 4);
+  // Right foot
+  ctx.fillStyle = metal4;
+  ctx.fillRect(x+36, y+60, 18, 6);
+  ctx.fillStyle = metal3;
+  ctx.fillRect(x+35, y+64, 20, 3);
+
+  // Knee joints
+  ctx.fillStyle = metal1;
+  ctx.beginPath(); ctx.arc(x+20, y+52, 4, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+43, y+52, 4, 0, Math.PI*2); ctx.fill();
+
+  // --- TORSO ---
+  // Main torso plate
+  ctx.fillStyle = metal3;
+  ctx.fillRect(x+8, y+14, 48, 32);
+  // Chest armor plates
+  ctx.fillStyle = metal2;
+  ctx.fillRect(x+10, y+16, 20, 14);
+  ctx.fillRect(x+34, y+16, 20, 14);
+  // Center spine channel
+  ctx.fillStyle = dark;
+  ctx.fillRect(x+28, y+14, 8, 32);
+  // Ribs / detail lines
+  ctx.fillStyle = metal4;
+  for (let rib = 0; rib < 4; rib++) {
+    ctx.fillRect(x+10, y+18+rib*7, 18, 2);
+    ctx.fillRect(x+36, y+18+rib*7, 18, 2);
+  }
+  // Chest glow core (reactor)
+  ctx.fillStyle = angry ? '#ff2200' : '#00ccff';
+  ctx.fillRect(x+29, y+22, 6, 10);
+  ctx.fillStyle = angry ? '#ff440044' : '#00ccff44';
+  ctx.fillRect(x+27, y+20, 10, 14);
+
+  // Shoulder guards
+  ctx.fillStyle = metal2;
+  ctx.fillRect(x+4, y+12, 14, 8);
+  ctx.fillRect(x+46, y+12, 14, 8);
+  ctx.fillStyle = metal1;
+  ctx.fillRect(x+4, y+12, 14, 3);
+  ctx.fillRect(x+46, y+12, 14, 3);
+
+  // --- ARMS ---
+  // Left arm
+  ctx.fillStyle = metal3;
+  ctx.fillRect(x-6, y+14+armOff, 14, 10);
+  ctx.fillStyle = metal2;
+  ctx.fillRect(x-8, y+22+armOff, 12, 10);
+  // Left elbow joint
+  ctx.fillStyle = metal1;
+  ctx.beginPath(); ctx.arc(x-2, y+22+armOff, 4, 0, Math.PI*2); ctx.fill();
+  // Left claw/fist
+  ctx.fillStyle = metal4;
+  ctx.fillRect(x-12, y+30+armOff, 14, 10);
+  ctx.fillStyle = metal3;
+  ctx.fillRect(x-14, y+32+armOff, 5, 4); // finger 1
+  ctx.fillRect(x-10, y+38+armOff, 5, 4); // finger 2
+  ctx.fillRect(x-4,  y+38+armOff, 5, 4); // finger 3
+
+  // Right arm
+  ctx.fillStyle = metal3;
+  ctx.fillRect(x+56, y+14-armOff, 14, 10);
+  ctx.fillStyle = metal2;
+  ctx.fillRect(x+60, y+22-armOff, 12, 10);
+  // Right elbow joint
+  ctx.fillStyle = metal1;
+  ctx.beginPath(); ctx.arc(x+66, y+22-armOff, 4, 0, Math.PI*2); ctx.fill();
+  // Right claw/fist
+  ctx.fillStyle = metal4;
+  ctx.fillRect(x+62, y+30-armOff, 14, 10);
+  ctx.fillStyle = metal3;
+  ctx.fillRect(x+73, y+32-armOff, 5, 4);
+  ctx.fillRect(x+69, y+38-armOff, 5, 4);
+  ctx.fillRect(x+63, y+38-armOff, 5, 4);
+
+  // --- HEAD ---
+  // Skull base
+  ctx.fillStyle = metal3;
+  ctx.fillRect(x+14, y+1, 36, 16);
+  // Cheekbones
+  ctx.fillStyle = metal2;
+  ctx.fillRect(x+13, y+8, 8, 10);
+  ctx.fillRect(x+43, y+8, 8, 10);
+  // Forehead plate
+  ctx.fillStyle = metal2;
+  ctx.fillRect(x+15, y+1, 34, 8);
+  ctx.fillStyle = metal1;
+  ctx.fillRect(x+15, y+1, 34, 3);
+  // Jaw
+  ctx.fillStyle = metal4;
+  ctx.fillRect(x+16, y+15, 32, 6);
+  // Teeth
+  ctx.fillStyle = metal1;
+  for (let t = 0; t < 5; t++) {
+    ctx.fillRect(x+18+t*6, y+17, 4, 4);
+  }
+
+  // Eye sockets
+  ctx.fillStyle = dark;
+  ctx.fillRect(x+17, y+5, 12, 9);
+  ctx.fillRect(x+35, y+5, 12, 9);
+
+  // Eye glow
+  ctx.fillStyle = eyeGlow;
+  ctx.fillRect(x+15, y+3, 16, 13);
+  ctx.fillRect(x+33, y+3, 16, 13);
+
+  // Eye pupils (glowing red)
+  ctx.fillStyle = eyeColor;
+  ctx.fillRect(x+19, y+7, 8, 5);
+  ctx.fillRect(x+37, y+7, 8, 5);
+  // Eye center bright
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x+22, y+8, 3, 3);
+  ctx.fillRect(x+40, y+8, 3, 3);
+
+  // Temples / side panels
+  ctx.fillStyle = metal4;
+  ctx.fillRect(x+12, y+4, 4, 12);
+  ctx.fillRect(x+48, y+4, 4, 12);
+
+  // Top antenna / sensor
+  ctx.fillStyle = metal3;
+  ctx.fillRect(x+30, y-6, 4, 8);
+  ctx.fillStyle = angry ? '#ff2200' : '#00ccff';
+  ctx.fillRect(x+29, y-8, 6, 4);
+
+  // Neck pistons
+  ctx.fillStyle = metal2;
+  ctx.fillRect(x+20, y+16, 5, 5);
+  ctx.fillRect(x+39, y+16, 5, 5);
+
+  // Angry effect - scan lines / heat distortion
+  if (angry) {
+    ctx.fillStyle = '#ff000022';
+    ctx.fillRect(x-10, y-10, 84, 84);
+    // Scan line
+    ctx.fillStyle = '#ff220055';
+    let sl = (frameCount * 3) % 80;
+    ctx.fillRect(x-8, y-8+sl, 80, 2);
+    // Energy sparks on shoulders
+    ctx.fillStyle = '#ff4400';
+    ctx.fillRect(x+4+Math.floor(Math.random()*4), y+10, 3, 3);
+    ctx.fillRect(x+56+Math.floor(Math.random()*4), y+10, 3, 3);
+  } else {
+    // Subtle blue scan line
+    ctx.fillStyle = '#00ccff18';
+    let sl = (frameCount * 2) % 80;
+    ctx.fillRect(x-2, y-2+sl, 68, 1);
+  }
+
+  // Metal shine highlights
+  ctx.fillStyle = '#ffffff33';
+  ctx.fillRect(x+10, y+16, 48, 2);
+  ctx.fillRect(x+14, y+1, 36, 2);
+
+  ctx.restore();
+}
+
+function drawPlayer(x, y, dir, frame, onLadder) {
+  ctx.save();
+  if (dir < 0) { ctx.scale(-1,1); x = -(x+20); }
+
+  const black    = '#080c0e';
+  const gi       = '#0e1520';   // deep midnight blue-black gi
+  const giMid    = '#162030';   // slightly lighter for depth
+  const sash     = '#cc0000';   // blood red sash
+  const sashDark = '#880000';
+  const wrap     = '#1a2530';   // arm/shin wraps
+  const skin     = '#c89060';
+  const eyeGlow  = '#00eeff';
+  const steel    = '#90b8c8';   // blade metal
+
+  let legOff   = onLadder ? 0 : (frame % 2 === 0 ? 0 : 5);
+  let armSwing = onLadder ? 0 : (frame % 2 === 0 ? -3 : 3);
+  let moving   = Math.abs(legOff) > 0;
+
+  // ── TRAILING SCARF ─────────────────────────────────────────────
+  ctx.fillStyle = sash;
+  ctx.fillRect(x-4, y+1, 5, 3);
+  ctx.fillStyle = sashDark;
+  ctx.fillRect(x-6, y+3, 5, 2);
+  ctx.fillRect(x-7, y+5, 4, 2);
+
+  // ── LEGS ───────────────────────────────────────────────────────
+  // Baggy hakama-style pants
+  ctx.fillStyle = gi;
+  ctx.fillRect(x+2,  y+17, 9, 10+legOff);
+  ctx.fillRect(x+10, y+17, 9, 10-legOff);
+
+  // Knee padding
+  ctx.fillStyle = giMid;
+  ctx.fillRect(x+2,  y+20+legOff, 9, 4);
+  ctx.fillRect(x+10, y+20-legOff, 9, 4);
+
+  // Shin wraps — thin alternating bands
+  ctx.fillStyle = wrap;
+  ctx.fillRect(x+2,  y+24+legOff, 9, 2);
+  ctx.fillRect(x+10, y+24-legOff, 9, 2);
+  ctx.fillStyle = black;
+  ctx.fillRect(x+2,  y+26+legOff, 9, 1);
+  ctx.fillRect(x+10, y+26-legOff, 9, 1);
+
+  // Tabi split-toe boots
+  ctx.fillStyle = black;
+  ctx.fillRect(x+0,  y+27+legOff, 11, 5);
+  ctx.fillRect(x+10, y+27-legOff, 11, 5);
+  // Toe split
+  ctx.fillStyle = giMid;
+  ctx.fillRect(x+4,  y+29+legOff, 2, 3);
+  ctx.fillRect(x+14, y+29-legOff, 2, 3);
+  // Boot sole highlight
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(x+0,  y+31+legOff, 11, 1);
+  ctx.fillRect(x+10, y+31-legOff, 11, 1);
+
+  // ── BODY ───────────────────────────────────────────────────────
+  ctx.fillStyle = gi;
+  ctx.fillRect(x+2, y+7, 18, 12);
+
+  // Gi wrap / diagonal lapel
+  ctx.fillStyle = giMid;
+  ctx.fillRect(x+7,  y+7, 2, 12);   // center fold
+  ctx.fillRect(x+2,  y+7, 5, 9);    // left panel
+  ctx.fillRect(x+15, y+7, 5, 9);    // right panel
+  // Lapel diagonal lines
+  ctx.fillStyle = black;
+  ctx.fillRect(x+4,  y+7, 1, 8);
+  ctx.fillRect(x+16, y+7, 1, 8);
+
+  // Obi sash / belt
+  ctx.fillStyle = sash;
+  ctx.fillRect(x+2, y+16, 18, 4);
+  // Sash center knot
+  ctx.fillStyle = sashDark;
+  ctx.fillRect(x+8, y+16, 6, 4);
+  ctx.fillStyle = sash;
+  ctx.fillRect(x+9, y+17, 4, 2);
+
+  // ── ARMS ───────────────────────────────────────────────────────
+  // Left arm
+  ctx.fillStyle = gi;
+  ctx.fillRect(x-2, y+7+armSwing, 6, 9);
+  // Gauntlet wrap
+  ctx.fillStyle = wrap;
+  ctx.fillRect(x-2, y+11+armSwing, 6, 4);
+  ctx.fillStyle = black;
+  ctx.fillRect(x-2, y+13+armSwing, 6, 1);
+  // Left fist
+  ctx.fillStyle = black;
+  ctx.fillRect(x-3, y+15+armSwing, 6, 5);
+  ctx.fillStyle = giMid;
+  ctx.fillRect(x-3, y+16+armSwing, 6, 1);
+  ctx.fillRect(x-3, y+18+armSwing, 6, 1);
+
+  // Right arm
+  ctx.fillStyle = gi;
+  ctx.fillRect(x+18, y+7-armSwing, 6, 9);
+  ctx.fillStyle = wrap;
+  ctx.fillRect(x+18, y+11-armSwing, 6, 4);
+  ctx.fillStyle = black;
+  ctx.fillRect(x+18, y+13-armSwing, 6, 1);
+  // Right fist
+  ctx.fillStyle = black;
+  ctx.fillRect(x+19, y+15-armSwing, 6, 5);
+  ctx.fillStyle = giMid;
+  ctx.fillRect(x+19, y+16-armSwing, 6, 1);
+  ctx.fillRect(x+19, y+18-armSwing, 6, 1);
+
+  // Kunai in right hand while running or jumping
+  if (moving || legOff !== 0) {
+    ctx.fillStyle = steel;
+    ctx.fillRect(x+22, y+8-armSwing, 2, 10);
+    ctx.fillRect(x+21, y+8-armSwing, 4, 2); // crossguard
+    ctx.fillStyle = '#2a3a44';
+    ctx.fillRect(x+22, y+17-armSwing, 2, 5); // handle
+    ctx.fillStyle = sash;
+    ctx.fillRect(x+22, y+18-armSwing, 2, 1);
+    ctx.fillRect(x+22, y+20-armSwing, 2, 1);
+    // Blade glint
+    ctx.fillStyle = '#ffffff88';
+    ctx.fillRect(x+22, y+9-armSwing, 1, 4);
+  }
+
+  // ── HEAD ───────────────────────────────────────────────────────
+  // Hood — rounded top
+  ctx.fillStyle = gi;
+  ctx.beginPath();
+  ctx.arc(x+11, y+3, 9, Math.PI, 0);
+  ctx.fill();
+  ctx.fillRect(x+2, y+3, 18, 10);
+
+  // Forehead cloth
+  ctx.fillStyle = gi;
+  ctx.fillRect(x+3, y-1, 16, 6);
+
+  // Face wrapping — only eye slit exposed
+  ctx.fillStyle = gi;
+  ctx.fillRect(x+3, y+7, 16, 5);   // lower face mask
+
+  // Nose bridge (slightly darker)
+  ctx.fillStyle = giMid;
+  ctx.fillRect(x+3, y+5, 16, 3);
+
+  // Eye slit skin
+  ctx.fillStyle = skin;
+  ctx.fillRect(x+4, y+4, 14, 5);
+
+  // Eyes — glowing cyan
+  ctx.fillStyle = eyeGlow;
+  ctx.fillRect(x+5,  y+5, 5, 3);
+  ctx.fillRect(x+12, y+5, 5, 3);
+  // Eye glow halo
+  ctx.fillStyle = '#00eeff25';
+  ctx.fillRect(x+4, y+4, 14, 5);
+  // Eye white spark
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x+6,  y+5, 2, 1);
+  ctx.fillRect(x+13, y+5, 2, 1);
+
+  // Mask seam lines
+  ctx.fillStyle = '#00000055';
+  ctx.fillRect(x+3, y+3, 16, 1);   // top seam
+  ctx.fillRect(x+3, y+9, 16, 1);   // bottom seam
+
+  // Headband — thin red stripe across forehead
+  ctx.fillStyle = sash;
+  ctx.fillRect(x+3, y+1, 16, 2);
+  // Headband knot at side
+  ctx.fillStyle = sashDark;
+  ctx.fillRect(x+19, y+0, 3, 3);
+  ctx.fillRect(x+20, y+3, 2, 2);   // trailing end
+
+  ctx.restore();
+}
+
+function drawPrincess(x, y, frame) {
+  ctx.save();
+  // Dress
+  ctx.fillStyle = '#ff69b4';
+  ctx.fillRect(x+2, y+12, 14, 18);
+  ctx.fillRect(x, y+22, 18, 10); // skirt
+  // Body
+  ctx.fillStyle = '#ffb6d0';
+  ctx.fillRect(x+4, y+8, 10, 10);
+  // Head
+  ctx.fillStyle = '#ffcc99';
+  ctx.fillRect(x+3, y, 12, 12);
+  // Hair
+  ctx.fillStyle = '#ffdd00';
+  ctx.fillRect(x+2, y, 14, 5);
+  ctx.fillRect(x+1, y+3, 4, 10);
+  ctx.fillRect(x+13, y+3, 4, 10);
+  // Eyes
+  ctx.fillStyle = '#000';
+  ctx.fillRect(x+5, y+4, 3, 3);
+  ctx.fillRect(x+10, y+4, 3, 3);
+  // Crown
+  ctx.fillStyle = '#ffd700';
+  ctx.fillRect(x+4, y-4, 10, 5);
+  ctx.fillRect(x+3, y-7, 3, 4);
+  ctx.fillRect(x+7, y-8, 4, 5);
+  ctx.fillRect(x+12, y-7, 3, 4);
+  // Wave animation
+  if (frame === 1) {
+    ctx.fillStyle = '#ff69b4';
+    ctx.fillRect(x+14, y+10, 6, 4);
+  } else {
+    ctx.fillStyle = '#ff69b4';
+    ctx.fillRect(x+14, y+8, 6, 4);
+  }
+  ctx.restore();
+}
+
+function drawBarrel(x, y, frame) {
+  ctx.save();
+  const cx = x + 9, cy = y + 9;
+  // Spin continuously based on frame
+  ctx.translate(cx, cy);
+  ctx.rotate(frame * Math.PI / 4);
+
+  const R = 9;   // tip radius
+  const r = 3.5; // inner hub radius
+  const points = 4;
+
+  // Motion blur trail — faint copies slightly behind
+  ctx.globalAlpha = 0.18;
+  ctx.fillStyle = '#aaccff';
+  for (let trail = 1; trail <= 2; trail++) {
+    ctx.save();
+    ctx.rotate(-trail * 0.35);
+    ctx.beginPath();
+    for (let i = 0; i < points; i++) {
+      const outerA = (i / points) * Math.PI * 2 - Math.PI / points;
+      const innerA1 = outerA + Math.PI / points * 0.55;
+      const innerA2 = outerA + Math.PI / points * 1.45;
+      if (i === 0) ctx.moveTo(Math.cos(outerA)*R, Math.sin(outerA)*R);
+      else ctx.lineTo(Math.cos(outerA)*R, Math.sin(outerA)*R);
+      ctx.lineTo(Math.cos(innerA1)*r, Math.sin(innerA1)*r);
+      ctx.lineTo(Math.cos(innerA2)*r, Math.sin(innerA2)*r);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+
+  // Shadow / depth
+  ctx.fillStyle = '#111a22';
+  ctx.beginPath();
+  for (let i = 0; i < points; i++) {
+    const outerA = (i / points) * Math.PI * 2 - Math.PI / points;
+    const innerA1 = outerA + Math.PI / points * 0.55;
+    const innerA2 = outerA + Math.PI / points * 1.45;
+    if (i === 0) ctx.moveTo(Math.cos(outerA)*(R+1)+1, Math.sin(outerA)*(R+1)+1);
+    else ctx.lineTo(Math.cos(outerA)*(R+1)+1, Math.sin(outerA)*(R+1)+1);
+    ctx.lineTo(Math.cos(innerA1)*r+1, Math.sin(innerA1)*r+1);
+    ctx.lineTo(Math.cos(innerA2)*r+1, Math.sin(innerA2)*r+1);
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  // Main star body — dark steel
+  const starGrad = ctx.createRadialGradient(0, 0, r, 0, 0, R);
+  starGrad.addColorStop(0, '#7a9ab0');
+  starGrad.addColorStop(0.5, '#4a6878');
+  starGrad.addColorStop(1, '#1e3040');
+  ctx.fillStyle = starGrad;
+  ctx.beginPath();
+  for (let i = 0; i < points; i++) {
+    const outerA = (i / points) * Math.PI * 2 - Math.PI / points;
+    const innerA1 = outerA + Math.PI / points * 0.55;
+    const innerA2 = outerA + Math.PI / points * 1.45;
+    if (i === 0) ctx.moveTo(Math.cos(outerA)*R, Math.sin(outerA)*R);
+    else ctx.lineTo(Math.cos(outerA)*R, Math.sin(outerA)*R);
+    ctx.lineTo(Math.cos(innerA1)*r, Math.sin(innerA1)*r);
+    ctx.lineTo(Math.cos(innerA2)*r, Math.sin(innerA2)*r);
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  // Edge highlight on each blade
+  ctx.strokeStyle = '#aad4f0';
+  ctx.lineWidth = 0.8;
+  for (let i = 0; i < points; i++) {
+    const outerA = (i / points) * Math.PI * 2 - Math.PI / points;
+    const innerA1 = outerA + Math.PI / points * 0.55;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(outerA)*R, Math.sin(outerA)*R);
+    ctx.lineTo(Math.cos(innerA1)*r, Math.sin(innerA1)*r);
+    ctx.stroke();
+  }
+
+  // Center hub
+  const hubGrad = ctx.createRadialGradient(-1, -1, 0.5, 0, 0, r);
+  hubGrad.addColorStop(0, '#e0f0ff');
+  hubGrad.addColorStop(0.5, '#6a8fa8');
+  hubGrad.addColorStop(1, '#2a3e50');
+  ctx.fillStyle = hubGrad;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Center hole
+  ctx.fillStyle = '#0d1a24';
+  ctx.beginPath();
+  ctx.arc(0, 0, 1.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Glint
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.beginPath();
+  ctx.arc(-2.5, -2.5, 1.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function loop() {
+  update();
+  draw();
+  animFrame = requestAnimationFrame(loop);
+}
+
+// Init stars for menu
+initStars();
+// Draw stars on menu
+(function menuDraw() {
+  if (state !== 'menu' && state !== 'playing') return;
+  if (state === 'menu') {
+    ctx.fillStyle = '#110008';
+    ctx.fillRect(0,0,W,H);
+    frameCount++;
+    for (let s of stars) {
+      s.t += 0.05;
+      let a = 0.3 + 0.4*Math.sin(s.t);
+      ctx.globalAlpha = a;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // Draw static preview
+    for (let p of getPlatforms()) {
+      let tilt = p.tilt||0;
+      let grad = ctx.createLinearGradient(p.x, p.y, p.x, p.y+p.h+10);
+      grad.addColorStop(0, '#e8943a');
+      grad.addColorStop(1, '#7a4010');
+      ctx.fillStyle = grad;
+      ctx.fillRect(p.x, p.y, p.w, p.h);
+    }
+    drawKong(30, 58, Math.floor(frameCount/20)%2, false);
+    drawPrincess(360, 62, Math.floor(frameCount/20)%2);
+    requestAnimationFrame(menuDraw);
+  }
+})();
+
+initStars();
+</script>
+</body>
+</html>
